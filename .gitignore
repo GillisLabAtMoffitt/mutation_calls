@@ -1,0 +1,22 @@
+# Default
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Mac
+.DS_Store
+.Rapp.history
+
+# Output data
+*.log
+*.png
+*.html
+*.jepg
+*.csv
+*.rds
+*.pptx
+
+# Example code in progress
+*-Ex.R
+*-Ex.Rmd
