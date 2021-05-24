@@ -19,12 +19,13 @@ extra_annotations <- extra_annotations %>%
   mutate(REF = str_match(Variant, ":[[:digit:]]*(.*)>")[,2]) %>% 
   mutate(ALT = str_match(Variant, ">(.*)")[,2])
 
-# write_csv(extra_annotations, paste0(path, "/05172021/MoffittCalls annotated separated " , format(Sys.time(),"%m%d%Y"), ".csv"))
+write_csv(extra_annotations, paste0(path, "/05172021/MoffittCalls annotated separated " , format(Sys.time(),"%m%d%Y"), ".csv"))
 # 2.Submit this file to Franklin
 
 # 3.Prep rescued mutations from MoffitCalls.annotated analyzed by Franklin
-franklin_mutations <-
-  read.delim("/Users/colinccm/Documents/GitHub/Gillis/no vpn data/CIBMTR/05172021/export_1621355280244.tsv") %>% 
+franklin_mutations <- 
+  read.delim(paste0(path, "/05172021/export_1621355280244.tsv")) %>% 
+  # read.delim("/Users/colinccm/Documents/GitHub/Gillis/no vpn data/CIBMTR/05172021/export_1621355280244.tsv") %>% 
   filter(str_detect(Submission.Date, "2021-05-18")) %>% 
   # select("Chrom", "Position", "Ref", "Alt", "Gene", "HgvsC", "HgvsP", "Effect", "Region", "Genoox.Classification") %>% 
   mutate(HgvsP1 = str_replace_all(HgvsP, c(
@@ -63,15 +64,16 @@ franklin_mutations <-
       (str_detect(Gene, "U2AF1") & str_detect(HgvsP1, "Q157P")) | # U2AF1L5, U2AF1???
       (str_detect(Gene, "U2AF1") & str_detect(HgvsP1, "Q157R"))
   ) %>% 
-  mutate(Chrom = str_remove(Chrom, "chr")) #%>% 
-  # mutate(merging_rescue = paste0(Chrom, Ref, Position, Alt))
+  mutate(Chrom = str_remove(Chrom, "chr"))
 
-# 4.Store the mutation in Franklin from our initial file which could be filtered out in the step 6
+# 4.Store the mutation in Franklin from our the raw file which could be filtered out in previous steps from non-annotated data
 rescued_calls <- 
-  right_join(non_annotated_calls, 
+  right_join(extra_annotations, 
              franklin_mutations, 
-             by = c("CHROM" = "Chrom", "GENE" = "Gene", 
-                    "REF" = "Ref", "POS" = "Position", "ALT" = "Alt"))
+             by = c("CHROM" = "Chrom", #"GENE" = "Gene", 
+                    "REF" = "Ref", "POS" = "Position", "ALT" = "Alt")) %>% 
+  rename(patient_id = "Sample", GENE = "Gene", DEPTH = "Depth", COSMIC.y = "COSMIC",
+         FUNCTION = "Effect", LOCATION = "Region")
 
 # 5.Join with non_annotated_calls with extra_annotations to get cosmic, right/left reads,...
 non_annotated_calls <- left_join(non_annotated_calls, 
@@ -82,11 +84,11 @@ non_annotated_calls <- left_join(non_annotated_calls,
 # 6.Filtering somatic mutations
 non_annotated_calls <- non_annotated_calls %>% 
   filter(!(VAF < 0.02 |
-           # DEPTH < 50  |
-           # (Left_reads + Right_reads) < 10 |
+           DEPTH < 50  | # NA
+           (Left_reads + Right_reads) < 10 | # NA
            (LOCATION == "intronic" | FUNCTION == "synonymous_SNV") |
            (dbSNP == "PRESENT" & VAF >= 0.450 & VAF <= 0.550) |
-           # (dbSNP == "PRESENT" & VAF > 0.95) |
+           (dbSNP == "PRESENT" & VAF > 0.95) | # NA
            COSMIC.y == "NOT_CONFIRMED_SOMATIC")
          )
 write_csv(non_annotated_calls, paste0(path, "/05172021/Annotation Filtered Calls " , format(Sys.time(),"%m%d%Y"), ".csv"))
@@ -95,7 +97,7 @@ write_csv(non_annotated_calls, paste0(path, "/05172021/Annotation Filtered Calls
 full_calls <- bind_rows(non_annotated_calls, rescued_calls) %>% 
   filter(!is.na(patient_id))
 
-write_csv(non_annotated_calls, paste0(path, "/05172021/Annotated Rescued and Filtered Calls " , format(Sys.time(),"%m%d%Y"), ".csv"))
+write_csv(full_calls, paste0(path, "/05172021/Annotated Rescued and Filtered Calls " , format(Sys.time(),"%m%d%Y"), ".csv"))
 
 
 
