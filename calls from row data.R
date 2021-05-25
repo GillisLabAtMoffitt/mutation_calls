@@ -74,7 +74,7 @@ rescued_calls <- extra_annotations %>%
   )
 
 # 6.Filtering somatic mutations
-extra_annotations <- extra_annotations %>% 
+calls_annotations <- extra_annotations %>% 
   filter(!(VAF < 0.02 |
            Depth < 50  | # NA
            (Left_reads + Right_reads) < 10 | # NA
@@ -83,9 +83,10 @@ extra_annotations <- extra_annotations %>%
            (dbSNP == "PRESENT" & VAF > 0.95) | # NA
            COSMIC == "NOT_CONFIRMED_SOMATIC")
          ) %>% 
-  bind_rows(., rescued_calls)
+  bind_rows(., rescued_calls) %>% 
+  mutate(POS = factor(POS))
 
-write_csv(extra_annotations, paste0(path, "/05172021/Annotated Raw and Filtered Calls " , format(Sys.time(),"%m%d%Y"), ".csv"))
+write_csv(calls_annotations, paste0(path, "/05172021/Annotated Raw and Filtered Calls " , format(Sys.time(),"%m%d%Y"), ".csv"))
 
 
 
