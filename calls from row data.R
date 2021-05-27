@@ -79,9 +79,9 @@ calls_annotations <- extra_annotations %>%
            Depth < 50  | # NA
            (Left_reads + Right_reads) < 10 | # NA
            (Region == "INTRONIC" | Effect == "SYNONYMOUS") |
-           (dbSNP == "PRESENT" & VAF >= 0.450 & VAF <= 0.550) |
-           (dbSNP == "PRESENT" & VAF > 0.95) | # NA
-           COSMIC == "NOT_CONFIRMED_SOMATIC")
+             (dbSNP == "PRESENT" & VAF >= 0.450 & VAF <= 0.550 & COSMIC.y == "NOT_CONFIRMED_SOMATIC") |
+             (dbSNP == "PRESENT" & VAF > 0.95 & COSMIC.y == "NOT_CONFIRMED_SOMATIC") | 
+             LOCATION == "UTR5")
          ) %>% 
   bind_rows(., rescued_calls) %>% 
   mutate(POS = factor(POS))

@@ -87,15 +87,16 @@ non_annotated_calls <- non_annotated_calls %>%
            DEPTH < 50  | # NA
            (Left_reads + Right_reads) < 10 | # NA
            (LOCATION == "intronic" | FUNCTION == "synonymous_SNV") |
-           (dbSNP == "PRESENT" & VAF >= 0.450 & VAF <= 0.550) |
-           (dbSNP == "PRESENT" & VAF > 0.95) | # NA
-           COSMIC.y == "NOT_CONFIRMED_SOMATIC")
+           (dbSNP == "PRESENT" & VAF >= 0.450 & VAF <= 0.550 & COSMIC.y == "NOT_CONFIRMED_SOMATIC") |
+           (dbSNP == "PRESENT" & VAF > 0.95 & COSMIC.y == "NOT_CONFIRMED_SOMATIC") | 
+           LOCATION == "UTR5")
          )
 write_csv(non_annotated_calls, paste0(path, "/05172021/Annotation Filtered Calls " , format(Sys.time(),"%m%d%Y"), ".csv"))
 
 # 7.Join somatic mutation and mutations from Franklin
 full_calls <- bind_rows(non_annotated_calls, rescued_calls) %>% 
-  filter(!is.na(patient_id))
+  filter(!is.na(patient_id)) %>% 
+  mutate(POS = factor(POS))
 
 write_csv(full_calls, paste0(path, "/05172021/Annotated Rescued and Filtered Calls " , format(Sys.time(),"%m%d%Y"), ".csv"))
 

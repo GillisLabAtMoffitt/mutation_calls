@@ -74,7 +74,28 @@ frick_exon <- inner_join(panel, calls_exon,
 write_csv(frick_exon, paste0(path, "/05172021/Raw data filtered selected for frick exon.csv"))
 
 
+## From Run 1
+panel <- readRDS("TruSightMyeloid panel.rds")
 
+non_annotated_calls_exon <-
+  read.delim(paste0(path, "/05172021/CIBMTR_NO_Filtering_trusight_exon.txt")) %>% 
+  select(c(exon:ALT)) %>% 
+  mutate(POS = factor(POS))
+
+calls_exon <- left_join(full_calls, non_annotated_calls_exon, 
+                        by = c("CHROM" = "X.CHROM", "POS", "REF", "ALT")) %>% 
+  separate(col = exon.1, into = paste0("possible_exon_", 1:3), sep = ";", extra = "warn", fill = "right") %>% 
+  purrr::keep(~!all(is.na(.)))
+
+
+# Keep mutations from Frick
+
+frick_exon <- inner_join(panel, calls_exon, 
+                         by = c("Gene" = "GENE")) %>% 
+  filter(str_detect(target_region_exon, possible_exon_1) | str_detect(target_region_exon, possible_exon_2) | str_detect(target_region_exon, possible_exon_3) |
+           str_detect(target_region_exon, "full"))
+
+write_csv(frick_exon, paste0(path, "/05172021/Run new filter selected for frick exon.csv"))
 
 
 
