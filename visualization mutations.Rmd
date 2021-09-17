@@ -1,0 +1,200 @@
+---
+title: "visialization mutations"
+author: "Christelle Colin-Leitzinger"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_collapsed: no
+    theme: cerulean
+    highlight: pygments
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      cache = FALSE,
+                      fig.align='center'#, fig.show='hold'
+                      )
+```
+
+
+```{r library, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r load}
+path <- fs::path("","Volumes","Gillis_Research","Christelle Colin-Leitzinger", "CIBMTR")
+
+data <-
+  read_csv(paste0(path, "/data/Run4_CIBMTR_CHIP calls_05.28.21_summary.csv"))
+```
+
+
+```{r plots}
+data <- data %>% 
+  mutate(across(everything(), ~ na_if(., ".")))
+
+data1 <- 
+  data %>% 
+    pivot_longer(
+      cols = !c("DONOR_ID", "DONOR_ID2"),
+      names_to = c("name", "n"),
+      names_sep = "_",
+      values_to = "value"
+    ) %>% 
+  filter(!is.na(value))
+
+data2 <- data1 %>% 
+  group_by(DONOR_ID, DONOR_ID2, n) %>% 
+  pivot_wider(names_from = "name", values_from = "value") %>% 
+  ungroup() %>% 
+  select(-n)
+```
+
+
+```{r prep, fig.width=12, fig.height=10}
+data2 %>% 
+  group_by(GENE) %>% 
+  mutate(count = n()) %>% 
+  ungroup() %>% 
+  ggplot(aes(x= fct_reorder(GENE, desc(count)), fill = GENE)) +
+  geom_bar() +
+  scale_fill_viridis_d()+
+  labs(x= "GENE")+
+  scale_y_continuous(expand = c(0, 0))+
+  theme_classic(base_size = 16)
+
+# colourCount = length(unique(data2$GENE))
+# getPalette = colorRampPalette(RColorBrewer::brewer.pal(8, "Accent"))(colourCount)
+# 
+# data2 %>% 
+#   group_by(GENE) %>% 
+#   mutate(count = n()) %>% 
+#   ungroup() %>% 
+#   ggplot(aes(x= fct_reorder(GENE, desc(count)), fill = GENE)) +
+#   geom_bar() +
+#   scale_fill_manual(values = getPalette)+
+#   labs(x= "GENE")+
+#   scale_y_continuous(expand = c(0, 0))+
+#   theme_classic(base_size = 16)
+
+# data2 %>% 
+#   group_by(GENE) %>% 
+#   mutate(count = n()) %>% 
+#   ungroup() %>% 
+#   
+#   ggplot(aes(x= fct_reorder(GENE, desc(count)), fill = GENE)) +
+#   geom_bar() +
+#   scale_fill_viridis_d()+
+#   theme_classic()+
+#   coord_polar("x", start=0, direction=-1)
+
+tbl <- as.data.frame(table(data2$GENE))
+
+tbl %>% mutate(Var1 = fct_reorder(Var1, desc(Freq))) %>%
+  ggplot(aes(x="", y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", width=1) +
+  scale_fill_viridis_d()+
+  scale_color_discrete("white")+
+  theme_void(base_size = 16) +
+  coord_polar("y", start=0, direction=1) +
+  geom_text(aes(x= 1.6, 
+                label = paste0(Freq#,
+                               # " (",
+                               # scales::percent(Freq / sum(Freq)),
+                               # ")"
+                               )
+                ),
+            position = position_stack(vjust = 0.5)
+            )
+
+data2 %>% 
+  group_by(GENE) %>% 
+  mutate(count = n()) %>% 
+  ungroup() %>% 
+  group_by(FUNCTION) %>% 
+  mutate(count1 = n()) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = fct_reorder(DONOR_ID, desc(count1)), y = fct_reorder(GENE, count), fill = FUNCTION)) +
+  geom_tile() +
+  scale_fill_manual(values=c("yellow", "chartreuse3", "red", "darkblue", "darkviolet", "black"#, "blue", "steelblue2", "black"
+                        ))+
+  theme_classic(base_size = 16) +
+  scale_x_discrete(position = "top")+
+  labs(x= "Samples", y= "GENE")+
+  # scale_fill_discrete(na.value = 'salmon')
+  theme(panel.background=element_rect(fill="lightgrey"),
+        axis.text.x = element_blank())
+```
+
+
+```{r}
+# data0 <- data %>%
+#   filter(!is.na(GENE_1))
+# 
+# 
+#   
+# 
+# 
+# 
+# # data0 %>% bind_cols(., data_na)
+# # 
+# # 
+# # 
+# data1 <-
+#   data0 %>%
+#   pivot_longer(
+#     cols = !c("DONOR_ID", "DONOR_ID2"),
+#     names_to = c("name", "n"),
+#     names_sep = "_",
+#     values_to = "value"
+#   )
+# data2 <- data1 %>% 
+#   group_by(DONOR_ID, DONOR_ID2, n) %>% 
+#   pivot_wider(names_from = "name", values_from = "value") %>% 
+#   ungroup() %>% 
+#   select(-n)
+# 
+# data3 <- data2 %>% expand(DONOR_ID, GENE) %>% 
+#   mutate(add= "add") %>% 
+#   full_join(., data2, by= "DONOR_ID") %>% 
+#   mutate(GENE = coalesce(GENE.y, GENE.x)) %>% 
+#   distinct(DONOR_ID, GENE, VARIANT, FUNCTION, VAF, .keep_all = TRUE) %>% 
+#   group_by(DONOR_ID, GENE) %>% 
+#   mutate(count = n()) %>% 
+#   ungroup() %>% 
+#   filter(!is.na(GENE)) %>% 
+#   filter(!(count == 2 & is.na(VAF)))
+
+
+# 
+# data_na <- tibble(
+#   name = c(rep("GENE",13)),
+#   b= c("ASXL1", "BCOR", "BCORL1", "CBL", "CUX1",
+#        "DNMT3A", "KDM6A", "KRAS", "NOTCH1",
+#        "RAD21", "SF3B1", "SRSF2", "TET2" )
+#                       )
+# 
+# 
+# data_x <- data1 %>%
+#   left_join(., data_na)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
